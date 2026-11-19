@@ -1617,9 +1617,31 @@ if(USE_ROCM)
     # rocSHMEM >= 3.5.0 exports the device reduce used by Triton.
     if(rocshmem_FOUND AND rocshmem_VERSION VERSION_GREATER_EQUAL "3.5.0")
       # rocSHMEM upstream ships device code for a subset of AMD gfx targets only.
-      # gfx1250-strict is its own offload target. rocSHMEM lists it next to
-      # gfx1250 for ROCm >= 7.14 (projects/rocshmem/CMakeLists.txt).
-      set(ROCSHMEM_SUPPORTED_ARCH gfx90a gfx942 gfx950 gfx1100 gfx1201 gfx1250 gfx1250-strict)
+      # gfx1250-strict is its own offload target. rocSHMEM 3.7.0 ships device
+      # bitcode for gfx1250 and not for gfx1250-strict, and the strict image
+      # then fails to link. Include strict only when this SDK has that bitcode.
+      set(ROCSHMEM_SUPPORTED_ARCH gfx90a gfx942 gfx950 gfx1100 gfx1201 gfx1250)
+      set(_strict_bc_name "librocshmem_device_gfx1250-strict.bc")
+      set(_strict_bc_dirs "${ROCM_PATH}/lib" "/opt/rocm/lib")
+      if(DEFINED ENV{ROCSHMEM_LIB_DIR})
+        list(INSERT _strict_bc_dirs 0 "$ENV{ROCSHMEM_LIB_DIR}")
+      endif()
+      set(_strict_bc "")
+      foreach(_dir ${_strict_bc_dirs})
+        if(NOT _strict_bc AND EXISTS "${_dir}/${_strict_bc_name}")
+          set(_strict_bc "${_dir}/${_strict_bc_name}")
+        endif()
+      endforeach()
+      if(_strict_bc)
+        list(APPEND ROCSHMEM_SUPPORTED_ARCH gfx1250-strict)
+      else()
+        list(FIND PYTORCH_ROCM_ARCH "gfx1250-strict" _strict_requested)
+        if(NOT _strict_requested EQUAL -1)
+          message(STATUS
+            "rocSHMEM device bitcode not found (${_strict_bc_name} in ${_strict_bc_dirs}); "
+            "omitting gfx1250-strict from the rocSHMEM build")
+        endif()
+      endif()
       set(_torch_rocshmem_build_arches)
       foreach(_arch ${PYTORCH_ROCM_ARCH})
         list(FIND ROCSHMEM_SUPPORTED_ARCH "${_arch}" _rocsmem_supported_idx)
