@@ -268,7 +268,7 @@ def evaluate_platform_sdpa_supports_hdim512():
         return False
     return True
 
-def evaluate_platform_supports_ck_gemms():
+def evaluate_platform_supports_ck_gemm():
     if TEST_WITH_ROCM:
         return torch._C._is_ck_gemm_available()
     return False
@@ -313,7 +313,7 @@ PLATFORM_SUPPORTS_FUSED_ATTENTION: bool = LazyVal(lambda: PLATFORM_SUPPORTS_FLAS
 PLATFORM_SUPPORTS_FUSED_SDPA: bool = TEST_CUDA and not TEST_WITH_ROCM
 
 PLATFORM_SUPPORTS_CK_SDPA: bool = LazyVal(lambda: evaluate_platform_supports_ck_sdpa())
-PLATFORM_SUPPORTS_CK_GEMMS: bool = LazyVal(lambda: evaluate_platform_supports_ck_gemms())
+PLATFORM_SUPPORTS_CK_GEMM: bool = LazyVal(lambda: evaluate_platform_supports_ck_gemm())
 
 PLATFORM_FUSED_ATTENTION_SUPPORTS_HDIM512: bool = LazyVal(lambda: evaluate_platform_sdpa_supports_hdim512())
 
