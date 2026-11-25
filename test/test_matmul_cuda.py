@@ -1422,7 +1422,6 @@ class TestMatmulCuda(InductorTestCase):
         not PLATFORM_SUPPORTS_CK_GEMMS,
         "CK GEMM is not supported on this platform",
     )
-    # Fails with triton 3.7
     @parametrize("backend", ["ck", "ck_tile"])
     def test_grouped_gemm_rocm_ck_flag(self, backend):
         if ProfilerActivity.CUDA not in supported_activities():
