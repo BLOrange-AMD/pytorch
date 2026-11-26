@@ -1416,8 +1416,8 @@ class TestMatmulCuda(InductorTestCase):
         self.assertEqual(C, C_ref)
 
     @skipCUDAIfNotRocm
-    # Stands in for the arch gate in GroupedBlas.cpp, which uses its own hardcoded
-    # arch lists rather than ckGemmSupported(); keep the two in sync.
+    # The flag follows TORCH_CK_GEMM_ARCH_LIST, but _grouped_mm in GroupedBlas.cpp hardcodes
+    # {gfx942, gfx950} for ck_tile and gfx90a for ck. Keep the default list in sync with those.
     @unittest.skipIf(
         not PLATFORM_SUPPORTS_CK_GEMM,
         "CK GEMM is not supported on this platform",
