@@ -30,7 +30,7 @@ from torch.testing._internal.common_cuda import (
     IS_SM90,
     PLATFORM_SUPPORTS_BF16,
     PLATFORM_SUPPORTS_CUBLASLT_GROUPED_GEMM,
-    PLATFORM_SUPPORTS_CK_GEMM,
+    skipIfNoCKGemm,
     SM90OrLater,
     SM100OrLater,
 )
@@ -1416,12 +1416,10 @@ class TestMatmulCuda(InductorTestCase):
         self.assertEqual(C, C_ref)
 
     @skipCUDAIfNotRocm
-    # Stands in for the arch gate in GroupedBlas.cpp, which uses its own hardcoded
-    # arch lists rather than ckGemmSupported(); keep the two in sync.
-    @unittest.skipIf(
-        not PLATFORM_SUPPORTS_CK_GEMM,
-        "CK GEMM is not supported on this platform",
-    )
+    # GroupedBlas.cpp gates on its own arch lists (gfx90a for ck, gfx942/gfx950 for
+    # ck_tile), not on ckGemmSupported(), so this only approximates that gate. Revisit
+    # if either list changes.
+    @skipIfNoCKGemm
     @parametrize("backend", ["ck", "ck_tile"])
     def test_grouped_gemm_rocm_ck_flag(self, backend):
         if ProfilerActivity.CUDA not in supported_activities():

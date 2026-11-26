@@ -47,7 +47,7 @@ from torch.testing._internal.common_dtype import (
     floating_and_complex_types_and, floating_types_and, complex_types,
 )
 from torch.testing._internal.common_cuda import BF16X9_SUPPORTED, CDNA2OrLater, RDNA3OrLater, IS_SM90, SM80OrLater, SM90OrLater, tf32_enabled, tf32_on_and_off, \
-    _get_magma_version, _get_torch_cuda_version, TEST_MULTIGPU, PLATFORM_SUPPORTS_CK_GEMM, PLATFORM_SUPPORTS_FP8, PLATFORM_SUPPORTS_MX_GEMM, blas_library_context, ROCM_VERSION
+    _get_magma_version, _get_torch_cuda_version, TEST_MULTIGPU, skipIfNoCKGemm, PLATFORM_SUPPORTS_FP8, PLATFORM_SUPPORTS_MX_GEMM, blas_library_context, ROCM_VERSION
 from torch.testing._internal.common_quantization import _group_quantize_tensor, _dynamically_quantize_per_channel, \
     _group_quantize_tensor_symmetric
 from torch.testing._internal.common_mkldnn import reduced_f32_on_and_off
@@ -12051,10 +12051,16 @@ class TestLinalgCudaOnly(TestCase):
         self.assertEqual(out1, out2)
         self.assertEqual(out_ref, out2.cpu())
 
-    @unittest.skipIf(
-        not PLATFORM_SUPPORTS_CK_GEMM,
-        "CK GEMM is not supported on this platform",
-    )
+    @skipCUDAIfNotRocm
+    @setBlasBackendsToDefaultFinally
+    def test_ck_gemm_available_matches_blas_backend(self):
+        if torch._C._is_ck_gemm_available():
+            self.assertEqual(torch.backends.cuda.preferred_blas_library("ck"), torch._C._BlasBackend.Ck)
+        else:
+            with self.assertRaisesRegex(RuntimeError, "Cannot set preferred blas backend to CK"):
+                torch.backends.cuda.preferred_blas_library("ck")
+
+    @skipIfNoCKGemm
     @skipCUDAIfNotRocm
     @unittest.skipIf(not blaslt_supported_device(), "blasLt not supported on current device")
     @setBlasBackendsToDefaultFinally
@@ -12069,10 +12075,7 @@ class TestLinalgCudaOnly(TestCase):
 
         self.assertEqual(ck_out, cpu_out)
 
-    @unittest.skipIf(
-        not PLATFORM_SUPPORTS_CK_GEMM,
-        "CK GEMM is not supported on this platform",
-    )
+    @skipIfNoCKGemm
     @skipCUDAIfNotRocm
     @unittest.skipIf(not blaslt_supported_device(), "blasLt not supported on current device")
     @setBlasBackendsToDefaultFinally
@@ -12095,10 +12098,7 @@ class TestLinalgCudaOnly(TestCase):
                 ck_out = torch.mm(a, b)
             self.assertEqual(ck_out, cpu_out)
 
-    @unittest.skipIf(
-        not PLATFORM_SUPPORTS_CK_GEMM,
-        "CK GEMM is not supported on this platform",
-    )
+    @skipIfNoCKGemm
     @skipCUDAIfNotRocm
     @unittest.skipIf(not blaslt_supported_device(), "blasLt not supported on current device")
     @setBlasBackendsToDefaultFinally
@@ -12114,10 +12114,7 @@ class TestLinalgCudaOnly(TestCase):
                     out = torch.addmm(bias, a, b, alpha=alpha, beta=beta)
                 self.assertEqual(out, expected.to(dtype))
 
-    @unittest.skipIf(
-        not PLATFORM_SUPPORTS_CK_GEMM,
-        "CK GEMM is not supported on this platform",
-    )
+    @skipIfNoCKGemm
     @skipCUDAIfNotRocm
     @unittest.skipIf(not blaslt_supported_device(), "blasLt not supported on current device")
     @setBlasBackendsToDefaultFinally

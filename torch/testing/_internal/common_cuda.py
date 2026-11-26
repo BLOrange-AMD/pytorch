@@ -315,6 +315,15 @@ PLATFORM_SUPPORTS_FUSED_SDPA: bool = TEST_CUDA and not TEST_WITH_ROCM
 PLATFORM_SUPPORTS_CK_SDPA: bool = LazyVal(lambda: evaluate_platform_supports_ck_sdpa())
 PLATFORM_SUPPORTS_CK_GEMM: bool = LazyVal(lambda: evaluate_platform_supports_ck_gemm())
 
+# Evaluated when the test runs, not at import, because querying CK GEMM support can warn.
+def skipIfNoCKGemm(fn):
+    @functools.wraps(fn)
+    def wrapper(*args, **kwargs):
+        if not PLATFORM_SUPPORTS_CK_GEMM:
+            raise unittest.SkipTest("CK GEMM is not supported on this platform")
+        return fn(*args, **kwargs)
+    return wrapper
+
 PLATFORM_FUSED_ATTENTION_SUPPORTS_HDIM512: bool = LazyVal(lambda: evaluate_platform_sdpa_supports_hdim512())
 
 def evaluate_platform_supports_bf16():
